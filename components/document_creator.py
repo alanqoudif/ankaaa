@@ -2,7 +2,6 @@ import streamlit as st
 from utils.openai_manager import OpenAIManager
 from utils.pdf_generator import PDFGenerator
 from utils.image_generator import ImageGenerator
-from utils.speech_to_text import SpeechToText, preprocess_audio
 import tempfile
 import os
 import datetime
@@ -15,11 +14,10 @@ def document_creator(vector_store, language):
         vector_store: Vector store with document embeddings
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize OpenAI manager, PDF generator, image generator, and speech-to-text
+    # Initialize OpenAI manager, PDF generator, image generator
     llm_manager = OpenAIManager()
     pdf_gen = PDFGenerator(language)
     img_gen = ImageGenerator(language)
-    stt = SpeechToText("en" if language == "English" else "ar")
     
     # Set up the UI based on language
     if language == "English":
@@ -27,14 +25,9 @@ def document_creator(vector_store, language):
         doc_type_label = "Document Type"
         doc_types = ["Employment Contract", "Power of Attorney", "Non-Disclosure Agreement", 
                     "Lease Agreement", "Sale Contract", "Legal Notice", "Custom Document"]
-        spec_input_label = "Document Specifications (or use voice input)"
-        voice_button_text = "Record Voice"
-        stop_button_text = "Stop Recording"
+        spec_input_label = "Document Specifications"
         create_button_text = "Create Document"
         loading_text = "Generating document..."
-        voice_instruction = "Click to speak your document specifications"
-        transcribing_text = "Transcribing audio..."
-        voice_placeholder = "Your spoken specifications will appear here..."
         pdf_download_text = "Download PDF"
         image_download_text = "Download Image"
         spec_placeholder = """
@@ -50,14 +43,9 @@ def document_creator(vector_store, language):
         doc_type_label = "نوع المستند"
         doc_types = ["عقد عمل", "توكيل رسمي", "اتفاقية عدم إفشاء", 
                     "عقد إيجار", "عقد بيع", "إشعار قانوني", "مستند مخصص"]
-        spec_input_label = "مواصفات المستند (أو استخدم إدخال الصوت)"
-        voice_button_text = "تسجيل الصوت"
-        stop_button_text = "إيقاف التسجيل"
+        spec_input_label = "مواصفات المستند"
         create_button_text = "إنشاء المستند"
         loading_text = "جاري إنشاء المستند..."
-        voice_instruction = "انقر للتحدث بمواصفات المستند الخاص بك"
-        transcribing_text = "جاري نسخ الصوت..."
-        voice_placeholder = "ستظهر المواصفات المنطوقة هنا..."
         pdf_download_text = "تنزيل PDF"
         image_download_text = "تنزيل الصورة"
         spec_placeholder = """
@@ -72,51 +60,8 @@ def document_creator(vector_store, language):
     # Document type selection
     doc_type = st.selectbox(doc_type_label, doc_types)
     
-    # Initialize session state for voice input
-    if "voice_input" not in st.session_state:
-        st.session_state.voice_input = ""
-    if "recording" not in st.session_state:
-        st.session_state.recording = False
-    
     # Text input for document specifications
-    specs = st.text_area(spec_input_label, value=st.session_state.voice_input, 
-                         placeholder=spec_placeholder, height=200)
-    
-    # Voice input section
-    st.write(voice_instruction)
-    
-    voice_col1, voice_col2 = st.columns(2)
-    
-    with voice_col1:
-        if not st.session_state.recording:
-            if st.button(voice_button_text, key="start_recording_btn"):
-                st.session_state.recording = True
-                st.rerun()
-        else:
-            if st.button(stop_button_text, key="stop_recording_btn", type="primary"):
-                # Stop recording and process audio
-                st.session_state.recording = False
-                
-                # Get the audio data
-                if "audio_data" in st.session_state:
-                    with st.spinner(transcribing_text):
-                        # Process the audio
-                        processed_audio = preprocess_audio(st.session_state.audio_data)
-                        
-                        # Transcribe the audio
-                        transcription = stt.transcribe_audio(processed_audio)
-                        
-                        # Update the text input with transcription
-                        st.session_state.voice_input = transcription
-                
-                st.rerun()
-    
-    # Display audio recorder when recording
-    if st.session_state.recording:
-        audio_data = st.audio_recorder(pause_threshold=2.0, sample_rate=16000)
-        if audio_data is not None:
-            st.session_state.audio_data = audio_data
-            st.text(voice_placeholder)
+    specs = st.text_area(spec_input_label, placeholder=spec_placeholder, height=200)
     
     # Process document creation
     if st.button(create_button_text, key="create_document_btn"):
