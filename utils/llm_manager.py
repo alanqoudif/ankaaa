@@ -1,5 +1,6 @@
 import os
 import google.generativeai as genai
+import time
 
 class LLMManager:
     """Manager for interactions with the Gemini language model"""
@@ -15,11 +16,27 @@ class LLMManager:
         # Configure the Gemini API
         genai.configure(api_key=api_key)
         
-        # Initialize the Gemini model
-        self.model = genai.GenerativeModel(
-            model_name="gemini-pro",
-            generation_config={"temperature": 0.2}
-        )
+        # List of models to try in order of preference
+        model_names = ["gemini-1.5-pro", "gemini-1.0-pro", "gemini-pro"]
+        
+        self.model = None
+        for model_name in model_names:
+            try:
+                print(f"Trying to initialize model: {model_name}")
+                self.model = genai.GenerativeModel(
+                    model_name=model_name,
+                    generation_config={"temperature": 0.2}
+                )
+                # Test the model with a simple prompt
+                response = self.model.generate_content("Hello")
+                print(f"Successfully initialized model: {model_name}")
+                break
+            except Exception as e:
+                print(f"Error initializing {model_name}: {e}")
+                time.sleep(1)  # Brief pause before trying the next model
+        
+        if self.model is None:
+            raise RuntimeError("Failed to initialize any Gemini model. Please check your API key and try again.")
     
     def answer_legal_question(self, question, context, language="English"):
         """
@@ -62,8 +79,16 @@ class LLMManager:
             الإجابة:
             """
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_message = f"Error generating content: {str(e)}"
+            print(error_message)
+            if language == "English":
+                return "I apologize, but I encountered an error while generating a response. Please try again or contact support if the issue persists."
+            else:
+                return "أعتذر، لكنني واجهت خطأ أثناء إنشاء استجابة. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
     
     def summarize_article(self, article_text, language="English"):
         """
@@ -95,8 +120,16 @@ class LLMManager:
             الملخص:
             """
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_message = f"Error generating content: {str(e)}"
+            print(error_message)
+            if language == "English":
+                return "I apologize, but I encountered an error while summarizing this article. Please try again or contact support if the issue persists."
+            else:
+                return "أعتذر، لكنني واجهت خطأ أثناء تلخيص هذه المادة. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
     
     def compare_laws(self, law1_name, law1_content, law2_name, law2_content, language="English"):
         """
@@ -139,8 +172,16 @@ class LLMManager:
             المقارنة:
             """
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_message = f"Error generating content: {str(e)}"
+            print(error_message)
+            if language == "English":
+                return "I apologize, but I encountered an error while comparing these laws. Please try again or contact support if the issue persists."
+            else:
+                return "أعتذر، لكنني واجهت خطأ أثناء مقارنة هذه القوانين. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
     
     def generate_legal_document(self, document_type, specifications, language="English"):
         """
@@ -181,8 +222,16 @@ class LLMManager:
             المستند:
             """
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_message = f"Error generating content: {str(e)}"
+            print(error_message)
+            if language == "English":
+                return "I apologize, but I encountered an error while generating the document. Please try again or contact support if the issue persists."
+            else:
+                return "أعتذر، لكنني واجهت خطأ أثناء إنشاء المستند. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
     
     def analyze_legal_case(self, case_description, legal_context, language="English"):
         """
@@ -233,5 +282,13 @@ class LLMManager:
             التحليل:
             """
         
-        response = self.model.generate_content(prompt)
-        return response.text
+        try:
+            response = self.model.generate_content(prompt)
+            return response.text
+        except Exception as e:
+            error_message = f"Error generating content: {str(e)}"
+            print(error_message)
+            if language == "English":
+                return "I apologize, but I encountered an error while analyzing this case. Please try again or contact support if the issue persists."
+            else:
+                return "أعتذر، لكنني واجهت خطأ أثناء تحليل هذه القضية. يرجى المحاولة مرة أخرى أو الاتصال بالدعم إذا استمرت المشكلة."
