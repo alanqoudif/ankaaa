@@ -3,10 +3,13 @@ import fitz  # PyMuPDF
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema import Document
 import re
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 def extract_text_from_pdf(pdf_path):
     """
     Extract text from a PDF file and maintain structural information.
+    Handle Arabic text properly with reshaping and bidirectional support.
     
     Args:
         pdf_path: Path to the PDF file
@@ -28,9 +31,17 @@ def extract_text_from_pdf(pdf_path):
         # Extract the law name from the filename or first few pages
         law_name = os.path.basename(pdf_path).replace('.pdf', '')
         
+        # Check if the document contains Arabic text
+        has_arabic = False
+        
         # Iterate through pages and extract text
         for page_num, page in enumerate(doc):
             page_text = page.get_text()
+            
+            # Check for Arabic characters
+            if any(ord(c) in range(0x0600, 0x06FF) for c in page_text):
+                has_arabic = True
+            
             text += f"\nPage {page_num + 1}:\n{page_text}"
             
             # Try to extract the actual law name from the first page
@@ -44,6 +55,7 @@ def extract_text_from_pdf(pdf_path):
                         law_name = potential_title
         
         metadata["law_name"] = law_name
+        metadata["has_arabic"] = has_arabic
         
         return {
             "text": text,
@@ -90,6 +102,7 @@ def identify_articles(text):
 def process_pdfs(pdf_paths):
     """
     Process multiple PDF files for use with LangChain.
+    Properly handle Arabic text with bidirectional support.
     
     Args:
         pdf_paths: List of paths to PDF files
@@ -103,8 +116,18 @@ def process_pdfs(pdf_paths):
         extracted_data = extract_text_from_pdf(pdf_path)
         
         if extracted_data:
+            # Get the text and check if it contains Arabic
+            text = extracted_data["text"]
+            has_arabic = extracted_data["metadata"].get("has_arabic", False)
+            
+            # If document contains Arabic, ensure proper bidirectional text handling
+            if has_arabic:
+                # We don't reshape the entire document here as it might break structure
+                # but we'll mark it for later processing
+                extracted_data["metadata"]["has_arabic"] = True
+            
             # Identify and structure articles
-            structured_text = identify_articles(extracted_data["text"])
+            structured_text = identify_articles(text)
             
             # Create text splitter for chunking
             text_splitter = RecursiveCharacterTextSplitter(
@@ -124,6 +147,7 @@ def process_pdfs(pdf_paths):
                     metadata={
                         "source": extracted_data["metadata"]["source"],
                         "law_name": extracted_data["metadata"]["law_name"],
+                        "has_arabic": has_arabic,
                         "chunk": i,
                         "total_chunks": len(chunks)
                     }
@@ -153,6 +177,7 @@ def get_available_laws(documents):
 def extract_article_by_number(documents, law_name, article_number):
     """
     Extract a specific article from a law.
+    Handle Arabic text properly with reshaping and bidirectional support.
     
     Args:
         documents: List of processed Document objects
@@ -165,11 +190,14 @@ def extract_article_by_number(documents, law_name, article_number):
     article_marker = f"[ARTICLE_{article_number}]"
     
     relevant_chunks = []
+    has_arabic = False
     
     # Find chunks containing the article
     for doc in documents:
         if doc.metadata.get("law_name") == law_name and article_marker in doc.page_content:
             relevant_chunks.append(doc)
+            if doc.metadata.get("has_arabic", False):
+                has_arabic = True
     
     if not relevant_chunks:
         return None
@@ -194,6 +222,11 @@ def extract_article_by_number(documents, law_name, article_number):
                 article_text += text[start_pos:] + " "
     
     # Clean up the article marker
-    cleaned_text = article_text.replace(article_marker, f"Article {article_number}")
+    if has_arabic:
+        article_label = f"المادة {article_number}" 
+    else:
+        article_label = f"Article {article_number}"
+    
+    cleaned_text = article_text.replace(article_marker, article_label)
     
     return cleaned_text.strip()

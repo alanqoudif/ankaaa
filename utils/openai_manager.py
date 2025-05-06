@@ -47,6 +47,7 @@ class OpenAIManager:
     def answer_legal_question(self, question, context, language="English"):
         """
         Answer a legal question based on provided context.
+        Handle both English and Arabic content properly.
         
         Args:
             question: The user's question
@@ -56,11 +57,17 @@ class OpenAIManager:
         Returns:
             The model's response
         """
+        # Check for Arabic content in the context
+        has_arabic_content = any(ord(c) in range(0x0600, 0x06FF) for c in context)
+        
         if language == "English":
             prompt = f"""
             You are an expert legal assistant specializing in Omani law. Answer the following question based ONLY on the legal information provided. 
             If you cannot find a clear answer in the context, state that you cannot provide a definitive answer based on the available information.
             Do not invent or assume any legal information that is not in the context.
+            
+            IMPORTANT: The context may contain Arabic text. If it does, you should still analyze it and provide an answer in English.
+            Don't mention that the context is in Arabic unless it's relevant to your answer.
             
             LEGAL CONTEXT:
             {context}
@@ -76,6 +83,9 @@ class OpenAIManager:
             إذا لم تتمكن من العثور على إجابة واضحة في السياق، اذكر أنك لا تستطيع تقديم إجابة حاسمة بناءً على المعلومات المتاحة.
             لا تخترع أو تفترض أي معلومات قانونية غير موجودة في السياق.
             
+            هام: قد يحتوي السياق على نص بالإنجليزية. إذا كان كذلك، يجب أن تقوم بتحليله وتقديم إجابة باللغة العربية.
+            لا تذكر أن السياق بالإنجليزية ما لم يكن ذلك مرتبطًا بإجابتك.
+            
             السياق القانوني:
             {context}
             
@@ -90,6 +100,7 @@ class OpenAIManager:
     def summarize_article(self, article_text, language="English"):
         """
         Summarize a legal article in 3-5 lines.
+        Handle both English and Arabic content properly.
         
         Args:
             article_text: The text of the legal article
@@ -98,9 +109,15 @@ class OpenAIManager:
         Returns:
             A concise summary of the article
         """
+        # Check for Arabic content in the text
+        has_arabic_content = any(ord(c) in range(0x0600, 0x06FF) for c in article_text)
+        
         if language == "English":
             prompt = f"""
             Summarize the following legal article in 3-5 concise lines. Focus on the main legal provisions and implications.
+            
+            IMPORTANT: The article may contain Arabic text. If it does, you should still analyze it and provide a summary in English.
+            Don't mention that the article is in Arabic unless it's relevant to your summary.
             
             ARTICLE:
             {article_text}
@@ -110,6 +127,9 @@ class OpenAIManager:
         else:  # Arabic
             prompt = f"""
             لخص المادة القانونية التالية في 3-5 أسطر موجزة. ركز على الأحكام والآثار القانونية الرئيسية.
+            
+            هام: قد تحتوي المادة على نص بالإنجليزية. إذا كان كذلك، يجب أن تقوم بتحليله وتقديم ملخص باللغة العربية.
+            لا تذكر أن المادة بالإنجليزية ما لم يكن ذلك مرتبطًا بملخصك.
             
             المادة:
             {article_text}
@@ -122,6 +142,7 @@ class OpenAIManager:
     def compare_laws(self, law1_name, law1_content, law2_name, law2_content, language="English"):
         """
         Compare two laws and provide analysis.
+        Handle both English and Arabic content properly.
         
         Args:
             law1_name: Name of the first law
@@ -133,10 +154,17 @@ class OpenAIManager:
         Returns:
             A comparison analysis of the two laws
         """
+        # Check for Arabic content in either law
+        has_arabic_content_law1 = any(ord(c) in range(0x0600, 0x06FF) for c in law1_content)
+        has_arabic_content_law2 = any(ord(c) in range(0x0600, 0x06FF) for c in law2_content)
+        
         if language == "English":
             prompt = f"""
             You are an expert in Omani law. Compare the following two laws, highlighting key similarities and differences in their provisions, scope, and legal implications.
             Structure your comparison with clear sections for similarities, differences, and a brief conclusion.
+            
+            IMPORTANT: One or both laws may contain Arabic text. If they do, you should still analyze them and provide a comparison in English.
+            Don't mention that the laws contain Arabic unless it's relevant to your comparison.
             
             FIRST LAW - {law1_name}:
             {law1_content}
@@ -150,6 +178,9 @@ class OpenAIManager:
             prompt = f"""
             أنت خبير في القانون العماني. قارن بين القانونين التاليين، مع تسليط الضوء على أوجه التشابه والاختلاف الرئيسية في أحكامهما ونطاقهما وآثارهما القانونية.
             قم بهيكلة المقارنة بأقسام واضحة لأوجه التشابه والاختلاف وخاتمة موجزة.
+            
+            هام: قد يحتوي أحد القانونين أو كلاهما على نص بالإنجليزية. إذا كان الأمر كذلك، يجب أن تقوم بتحليلهما وتقديم مقارنة باللغة العربية.
+            لا تذكر أن القوانين تحتوي على نص بالإنجليزية ما لم يكن ذلك مرتبطًا بمقارنتك.
             
             القانون الأول - {law1_name}:
             {law1_content}
@@ -165,6 +196,7 @@ class OpenAIManager:
     def generate_legal_document(self, document_type, specifications, language="English"):
         """
         Generate a legal document based on specifications.
+        Handle both English and Arabic content properly.
         
         Args:
             document_type: Type of document to generate (e.g., "employment contract")
@@ -174,11 +206,17 @@ class OpenAIManager:
         Returns:
             Generated legal document text
         """
+        # Check if specifications contain Arabic text
+        has_arabic = any(ord(c) in range(0x0600, 0x06FF) for c in specifications)
+        
         if language == "English":
             prompt = f"""
             As a legal expert in Omani law, create a professionally formatted {document_type} based on the following specifications.
             Ensure the document complies with Omani legal standards and includes all necessary clauses, provisions, and legal language.
             Format the document with proper sections, numbering, and structure.
+            
+            IMPORTANT: The specifications may contain Arabic text or terms. If they do, you should still understand them and create an English document.
+            You can include Arabic terms if they are legal terms specific to Omani law that don't have good English equivalents.
             
             DOCUMENT TYPE: {document_type}
             
@@ -193,6 +231,9 @@ class OpenAIManager:
             تأكد من أن المستند يتوافق مع المعايير القانونية العمانية ويتضمن جميع البنود والأحكام واللغة القانونية الضرورية.
             قم بتنسيق المستند بأقسام وترقيم وهيكل مناسب.
             
+            هام: قد تحتوي المواصفات على نص أو مصطلحات إنجليزية. إذا كان الأمر كذلك، يجب أن تفهمها وتنشئ مستندًا باللغة العربية.
+            يمكنك تضمين المصطلحات الإنجليزية إذا كانت مصطلحات قانونية محددة في القانون العماني ليس لها مكافئات جيدة باللغة العربية.
+            
             نوع المستند: {document_type}
             
             المواصفات:
@@ -206,6 +247,7 @@ class OpenAIManager:
     def analyze_legal_case(self, case_description, legal_context, language="English"):
         """
         Analyze a legal case based on relevant laws.
+        Handle both English and Arabic content properly.
         
         Args:
             case_description: Description of the legal case
@@ -215,6 +257,10 @@ class OpenAIManager:
         Returns:
             Legal analysis of the case
         """
+        # Check for Arabic content
+        has_arabic_context = any(ord(c) in range(0x0600, 0x06FF) for c in legal_context)
+        has_arabic_case = any(ord(c) in range(0x0600, 0x06FF) for c in case_description)
+        
         if language == "English":
             prompt = f"""
             As an expert in Omani law, analyze the following legal case. Identify the relevant legal issues, apply the applicable laws from the provided context, and provide a legal assessment.
@@ -224,6 +270,9 @@ class OpenAIManager:
             3. Applicable Laws
             4. Legal Analysis
             5. Conclusion
+            
+            IMPORTANT: The case description or legal context may contain Arabic text. If they do, you should still analyze them and provide your analysis in English.
+            Don't mention that the text is in Arabic unless it's relevant to your analysis.
             
             CASE DESCRIPTION:
             {case_description}
@@ -242,6 +291,9 @@ class OpenAIManager:
             3. القوانين المطبقة
             4. التحليل القانوني
             5. الخلاصة
+            
+            هام: قد يحتوي وصف القضية أو السياق القانوني على نص بالإنجليزية. إذا كان الأمر كذلك، يجب أن تقوم بتحليلهما وتقديم تحليلك باللغة العربية.
+            لا تذكر أن النص بالإنجليزية ما لم يكن ذلك مرتبطًا بتحليلك.
             
             وصف القضية:
             {case_description}
