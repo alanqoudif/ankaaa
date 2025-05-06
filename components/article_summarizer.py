@@ -1,6 +1,6 @@
 import streamlit as st
 from utils.document_processor import extract_article_by_number
-from utils.llm_manager import LLMManager
+from utils.openai_manager import OpenAIManager
 import re
 
 def article_summarizer(vector_store, available_laws, language):
@@ -12,8 +12,8 @@ def article_summarizer(vector_store, available_laws, language):
         available_laws: List of available law names
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize LLM manager
-    llm_manager = LLMManager()
+    # Initialize OpenAI manager
+    llm_manager = OpenAIManager()
     
     # Set up the UI based on language
     if language == "English":

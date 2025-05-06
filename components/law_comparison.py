@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.llm_manager import LLMManager
+from utils.openai_manager import OpenAIManager
 from utils.speech_to_text import SpeechToText, preprocess_audio
 
 def law_comparison(vector_store, available_laws, language):
@@ -11,8 +11,8 @@ def law_comparison(vector_store, available_laws, language):
         available_laws: List of available law names
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize LLM manager and speech-to-text
-    llm_manager = LLMManager()
+    # Initialize OpenAI manager and speech-to-text
+    llm_manager = OpenAIManager()
     stt = SpeechToText("en" if language == "English" else "ar")
     
     # Set up the UI based on language

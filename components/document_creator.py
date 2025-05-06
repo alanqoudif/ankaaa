@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.llm_manager import LLMManager
+from utils.openai_manager import OpenAIManager
 from utils.pdf_generator import PDFGenerator
 from utils.image_generator import ImageGenerator
 from utils.speech_to_text import SpeechToText, preprocess_audio
@@ -15,8 +15,8 @@ def document_creator(vector_store, language):
         vector_store: Vector store with document embeddings
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize LLM manager, PDF generator, image generator, and speech-to-text
-    llm_manager = LLMManager()
+    # Initialize OpenAI manager, PDF generator, image generator, and speech-to-text
+    llm_manager = OpenAIManager()
     pdf_gen = PDFGenerator(language)
     img_gen = ImageGenerator(language)
     stt = SpeechToText("en" if language == "English" else "ar")

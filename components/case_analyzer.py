@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.llm_manager import LLMManager
+from utils.openai_manager import OpenAIManager
 from utils.pdf_generator import PDFGenerator
 import datetime
 
@@ -11,8 +11,8 @@ def case_analyzer(vector_store, language):
         vector_store: Vector store with document embeddings
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize LLM manager and PDF generator
-    llm_manager = LLMManager()
+    # Initialize OpenAI manager and PDF generator
+    llm_manager = OpenAIManager()
     pdf_gen = PDFGenerator(language)
     
     # Set up the UI based on language

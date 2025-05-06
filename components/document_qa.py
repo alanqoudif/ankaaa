@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.llm_manager import LLMManager
+from utils.openai_manager import OpenAIManager
 import time
 
 def document_qa(vector_store, language):
@@ -10,8 +10,8 @@ def document_qa(vector_store, language):
         vector_store: Vector store with document embeddings
         language: Language to use for interface (English or Arabic)
     """
-    # Initialize LLM manager
-    llm_manager = LLMManager()
+    # Initialize OpenAI manager
+    llm_manager = OpenAIManager()
     
     # Set up the UI based on language
     if language == "English":
