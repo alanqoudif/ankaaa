@@ -89,11 +89,11 @@ def document_creator(vector_store, language):
     
     with voice_col1:
         if not st.session_state.recording:
-            if st.button(voice_button_text):
+            if st.button(voice_button_text, key="start_recording_btn"):
                 st.session_state.recording = True
                 st.rerun()
         else:
-            if st.button(stop_button_text, type="primary"):
+            if st.button(stop_button_text, key="stop_recording_btn", type="primary"):
                 # Stop recording and process audio
                 st.session_state.recording = False
                 
@@ -119,7 +119,7 @@ def document_creator(vector_store, language):
             st.text(voice_placeholder)
     
     # Process document creation
-    if st.button(create_button_text):
+    if st.button(create_button_text, key="create_document_btn"):
         if not specs:
             return
         
@@ -149,7 +149,8 @@ def document_creator(vector_store, language):
                     label=pdf_download_text,
                     data=pdf_buffer,
                     file_name=f"{doc_type.replace(' ', '_').lower()}_{current_date}.pdf",
-                    mime="application/pdf"
+                    mime="application/pdf",
+                    key="pdf_download_btn"
                 )
             
             with col2:
@@ -157,7 +158,8 @@ def document_creator(vector_store, language):
                     label=image_download_text,
                     data=image_buffer,
                     file_name=f"{doc_type.replace(' ', '_').lower()}_{current_date}.png",
-                    mime="image/png"
+                    mime="image/png",
+                    key="image_download_btn"
                 )
             
             # Display image preview
