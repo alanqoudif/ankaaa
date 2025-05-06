@@ -63,6 +63,96 @@ else:  # Arabic
 # Find PDF files in the current directory
 pdf_files = glob.glob("*.pdf") + glob.glob("**/*.pdf", recursive=True)
 
+# Create a sample PDF file if none are found
+if not pdf_files:
+    from reportlab.lib.pagesizes import letter
+    from reportlab.pdfgen import canvas
+    import io
+    
+    if st.session_state.language == "English":
+        demo_file_text = "Creating a sample PDF file for demonstration..."
+        demo_law_text = """
+        # Omani Labor Law (Sample)
+        
+        [Article 1]
+        This law shall be called the Labor Law and shall apply to all employers and employees except those excluded by a special provision herein.
+        
+        [Article 2]
+        Employment is a right of every citizen. No person shall be forced to perform work against their will.
+        
+        [Article 3]
+        All citizens are equal in the right to work and in freedom of choice of profession according to rules and conditions set forth by law.
+        
+        [Article 4]
+        It shall be prohibited to violate or evade the provisions of this Law and each condition or agreement to this effect shall be null and void.
+        
+        [Article 5]
+        Arabic shall be the language to be used in all records, contracts, files, statements and other documents provided for in this Law or in any decisions or regulations issued in implementation of this Law.
+        """
+    else:  # Arabic
+        demo_file_text = "إنشاء ملف PDF عينة للعرض التوضيحي..."
+        demo_law_text = """
+        # قانون العمل العُماني (عينة)
+        
+        [المادة 1]
+        يسمى هذا القانون قانون العمل وينطبق على جميع أصحاب العمل والعاملين باستثناء المستبعدين بحكم خاص في هذا القانون.
+        
+        [المادة 2]
+        العمل حق لكل مواطن. لا يجوز إجبار أي شخص على أداء عمل ضد إرادته.
+        
+        [المادة 3]
+        جميع المواطنين متساوون في حق العمل وحرية اختيار المهنة وفقًا للقواعد والشروط المنصوص عليها في القانون.
+        
+        [المادة 4]
+        يُحظر انتهاك أو التحايل على أحكام هذا القانون ويكون كل شرط أو اتفاق على خلاف ذلك باطلاً وباطلاً.
+        
+        [المادة 5]
+        تكون اللغة العربية هي اللغة المستخدمة في جميع السجلات والعقود والملفات والبيانات وغيرها من الوثائق المنصوص عليها في هذا القانون أو في أي قرارات أو لوائح صادرة تنفيذاً لهذا القانون.
+        """
+    
+    with st.spinner(demo_file_text):
+        # Create a PDF
+        pdf_buffer = io.BytesIO()
+        c = canvas.Canvas(pdf_buffer, pagesize=letter)
+        
+        # Title
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(72, 750, "Omani Labor Law (Sample)")
+        
+        # Content
+        c.setFont("Helvetica", 12)
+        y_position = 700
+        for line in demo_law_text.split('\n'):
+            line = line.strip()
+            if not line:
+                y_position -= 20  # Add space for empty lines
+                continue
+                
+            if line.startswith('['):
+                c.setFont("Helvetica-Bold", 12)
+                y_position -= 30  # Add more space before articles
+            else:
+                c.setFont("Helvetica", 12)
+            
+            # Check if we need a new page
+            if y_position < 72:
+                c.showPage()
+                y_position = 750
+            
+            c.drawString(72, y_position, line)
+            y_position -= 20
+        
+        c.save()
+        
+        # Write the PDF to disk
+        pdf_data = pdf_buffer.getvalue()
+        with open("oman_labor_law_sample.pdf", "wb") as f:
+            f.write(pdf_data)
+        
+        # Update pdf_files list
+        pdf_files = ["oman_labor_law_sample.pdf"]
+        st.info("Created a sample PDF file for demonstration purposes.")
+
 # Process PDF files if available
 if pdf_files:
     if not st.session_state.processed_docs:

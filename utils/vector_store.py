@@ -1,53 +1,64 @@
 import os
-import faiss
-import numpy as np
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-import tensorflow_hub as hub
+import re
 from langchain.schema import Document
 
 class VectorStore:
-    """Class to manage document embeddings and vector search"""
+    """Simple search class for document retrieval using keyword matching"""
     
     def __init__(self, documents, use_huggingface=True):
         """
-        Initialize vector store with documents.
+        Initialize the search engine with documents.
         
         Args:
             documents: List of LangChain Document objects
-            use_huggingface: Whether to use HuggingFace embeddings (True) or TensorFlow Hub (False)
+            use_huggingface: Not used, kept for backward compatibility
         """
         self.documents = documents
-        self.use_huggingface = use_huggingface
+        self.use_huggingface = True  # Always use simple search
         
-        # Initialize embeddings model
-        if use_huggingface:
-            # Use HuggingFace embeddings for multilingual support
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-            )
-            # Create FAISS index from documents
-            self.vector_store = FAISS.from_documents(documents, self.embeddings)
-        else:
-            # Use Universal Sentence Encoder (supports Arabic and English)
-            self.embeddings = hub.load("https://tfhub.dev/google/universal-sentence-encoder-multilingual/3")
-            self._create_faiss_index()
+        # Pre-process documents for search
+        self.process_documents()
     
-    def _create_faiss_index(self):
-        """Create a FAISS index manually when using TensorFlow Hub embeddings"""
-        # Extract text content from documents
-        texts = [doc.page_content for doc in self.documents]
+    def process_documents(self):
+        """Process documents to prepare them for search"""
+        # Create a mapping of document content to document objects
+        self.doc_contents = {}
+        for doc in self.documents:
+            # Get content and tokenize into lowercase words
+            content = doc.page_content.lower()
+            # Create mapping from content to document
+            self.doc_contents[content] = doc
+    
+    def text_similarity(self, query, text):
+        """
+        Calculate a simple similarity score between query and text.
         
-        # Generate embeddings
-        embeddings = self.embeddings(texts).numpy()
+        Args:
+            query: The search query
+            text: The text to compare against
+            
+        Returns:
+            A similarity score (higher is better)
+        """
+        query = query.lower()
+        text = text.lower()
         
-        # Create FAISS index
-        dimension = embeddings.shape[1]
-        index = faiss.IndexFlatL2(dimension)
-        index.add(embeddings)
+        # Count how many query terms appear in the text
+        query_terms = re.findall(r'\b\w+\b', query)
+        matches = sum(1 for term in query_terms if term in text)
         
-        self.index = index
-        self.embeddings_array = embeddings
+        # Calculate a score between 0 and 1
+        if not query_terms:
+            return 0
+        
+        score = matches / len(query_terms)
+        
+        # Boost score if the exact query appears in the text
+        if query in text:
+            score += 0.5
+            
+        # Cap at 1.0
+        return min(score, 1.0)
     
     def search(self, query, k=5):
         """
@@ -60,25 +71,19 @@ class VectorStore:
         Returns:
             List of (Document, score) tuples
         """
-        if self.use_huggingface:
-            return self.vector_store.similarity_search_with_score(query, k=k)
-        else:
-            # Embed the query
-            query_embedding = self.embeddings([query]).numpy()
-            
-            # Search the index
-            distances, indices = self.index.search(query_embedding, k)
-            
-            # Format the results
-            results = []
-            for i, idx in enumerate(indices[0]):
-                if idx >= len(self.documents):  # Guard against out-of-bounds
-                    continue
-                doc = self.documents[idx]
-                score = 1.0 / (1.0 + distances[0][i])  # Convert distance to similarity score
+        results = []
+        
+        # Score each document
+        for content, doc in self.doc_contents.items():
+            score = self.text_similarity(query, content)
+            if score > 0:  # Only include results with some match
                 results.append((doc, score))
-            
-            return results
+        
+        # Sort by score (descending)
+        results.sort(key=lambda x: x[1], reverse=True)
+        
+        # Return top k results
+        return results[:k]
     
     def search_by_law(self, query, law_name, k=5):
         """
@@ -98,35 +103,8 @@ class VectorStore:
         if not filtered_docs:
             return []
         
-        # Create a temporary vector store with filtered documents
-        if self.use_huggingface:
-            temp_vector_store = FAISS.from_documents(filtered_docs, self.embeddings)
-            return temp_vector_store.similarity_search_with_score(query, k=k)
-        else:
-            # Extract text content from filtered documents
-            texts = [doc.page_content for doc in filtered_docs]
-            
-            # Generate embeddings
-            embeddings = self.embeddings(texts).numpy()
-            
-            # Create temporary FAISS index
-            dimension = embeddings.shape[1]
-            temp_index = faiss.IndexFlatL2(dimension)
-            temp_index.add(embeddings)
-            
-            # Embed the query
-            query_embedding = self.embeddings([query]).numpy()
-            
-            # Search the index
-            distances, indices = temp_index.search(query_embedding, k)
-            
-            # Format the results
-            results = []
-            for i, idx in enumerate(indices[0]):
-                if idx >= len(filtered_docs):  # Guard against out-of-bounds
-                    continue
-                doc = filtered_docs[idx]
-                score = 1.0 / (1.0 + distances[0][i])  # Convert distance to similarity score
-                results.append((doc, score))
-            
-            return results
+        # Create temporary search instance with filtered documents
+        temp_search = VectorStore(filtered_docs)
+        
+        # Search within the filtered documents
+        return temp_search.search(query, k=k)
