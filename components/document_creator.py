@@ -2,6 +2,7 @@ import streamlit as st
 from utils.openai_manager import OpenAIManager
 from utils.pdf_generator import PDFGenerator
 from utils.image_generator import ImageGenerator
+from utils.speech_to_text import SpeechToText, preprocess_audio
 import tempfile
 import os
 import datetime
@@ -60,8 +61,49 @@ def document_creator(vector_store, language):
     # Document type selection
     doc_type = st.selectbox(doc_type_label, doc_types)
     
+    # Initialize session state for voice input
+    if "doc_voice_input" not in st.session_state:
+        st.session_state.doc_voice_input = ""
+    
     # Text input for document specifications
-    specs = st.text_area(spec_input_label, placeholder=spec_placeholder, height=200)
+    specs = st.text_area(spec_input_label, value=st.session_state.doc_voice_input, 
+                         placeholder=spec_placeholder, height=200)
+    
+    # Voice input through file upload
+    if language == "English":
+        upload_text = "Or upload an audio file with your document specifications"
+        transcribing_text = "Transcribing audio..."
+    else:  # Arabic
+        upload_text = "أو قم بتحميل ملف صوتي يحتوي على مواصفات المستند"
+        transcribing_text = "جاري نسخ الصوت..."
+    
+    st.write(upload_text)
+    audio_file = st.file_uploader("", type=["wav", "mp3", "ogg"], key="doc_audio_upload")
+    
+    if audio_file is not None and "doc_audio_processed" not in st.session_state:
+        with st.spinner(transcribing_text):
+            # Initialize speech-to-text
+            stt = SpeechToText("en" if language == "English" else "ar")
+            
+            # Read the audio file
+            audio_bytes = audio_file.read()
+            
+            # Process the audio
+            processed_audio = preprocess_audio(audio_bytes)
+            
+            # Transcribe the audio
+            transcription = stt.transcribe_audio(processed_audio)
+            
+            # Update the specifications
+            st.session_state.doc_voice_input = transcription
+            st.session_state.doc_audio_processed = True
+            
+            # Rerun to update the text area with the transcription
+            st.rerun()
+    
+    # Clear the processed flag if there's no audio file
+    if audio_file is None and "doc_audio_processed" in st.session_state:
+        st.session_state.pop("doc_audio_processed")
     
     # Process document creation
     if st.button(create_button_text, key="create_document_btn"):
