@@ -52,29 +52,30 @@ def case_analyzer(vector_store, language):
     # Case description input
     case_description = st.text_area(case_input_label, value=st.session_state.case_voice_input, placeholder=case_placeholder, height=200)
     
-    # Add direct voice-to-text functionality using Streamlit's audio recorder
+    # Voice input through file upload with improved styling
     if language == "English":
-        record_button_text = "🎤 Record Voice Case Description"
-        recording_text = "Recording... Click to stop"
+        record_button_text = "🎤 Upload Voice Case Description"
         processing_text = "Processing audio..."
     else:  # Arabic
-        record_button_text = "🎤 تسجيل وصف القضية صوتياً"
-        recording_text = "جارٍ التسجيل... انقر للإيقاف"
+        record_button_text = "🎤 تحميل وصف القضية صوتياً"
         processing_text = "جارٍ معالجة الصوت..."
     
-    # Audio recorder with custom styling
-    st.write(f"**{record_button_text}**")
+    # Create a styled container for audio upload
+    audio_container = st.container()
+    with audio_container:
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            st.write(f"**{record_button_text}**")
+        with col2:
+            audio_file = st.file_uploader("", type=["wav", "mp3", "ogg"], key="case_audio_upload",
+                                        label_visibility="collapsed")
     
-    # Create the audio recorder with a styled button
-    audio_bytes = st.audio_recorder(
-        pause_threshold=3.0,  # Auto-stop after 3s of silence
-        sample_rate=16000,    # 16kHz sample rate
-        key="case_audio_recorder"
-    )
-    
-    # Process recorded audio
-    if audio_bytes is not None and "case_recording_processed" not in st.session_state:
+    # Process the audio file if uploaded
+    if audio_file is not None and "case_audio_processed" not in st.session_state:
         with st.spinner(processing_text):
+            # Read the audio file
+            audio_bytes = audio_file.read()
+            
             # Process the audio
             processed_audio = preprocess_audio(audio_bytes)
             
@@ -83,42 +84,17 @@ def case_analyzer(vector_store, language):
             
             # Update the case description
             st.session_state.case_voice_input = transcription
-            st.session_state.case_recording_processed = True
+            st.session_state.case_audio_processed = True
             
             # Rerun to update the text area with the transcription
             st.rerun()
     
-    # Clear the processed flag when starting a new recording
-    if audio_bytes is None and "case_recording_processed" in st.session_state:
-        st.session_state.pop("case_recording_processed")
+    # Clear the processed flag if there's no audio file
+    if audio_file is None and "case_audio_processed" in st.session_state:
+        st.session_state.pop("case_audio_processed")
     
-    # Voice input through file upload as fallback option
+    # Additional help text
     st.write(upload_text)
-    
-    with st.expander("Upload Audio File"):
-        audio_file = st.file_uploader("", type=["wav", "mp3", "ogg"], key="case_audio_upload")
-        
-        if audio_file is not None and "case_audio_processed" not in st.session_state:
-            with st.spinner(transcribing_text):
-                # Read the audio file
-                audio_bytes = audio_file.read()
-                
-                # Process the audio
-                processed_audio = preprocess_audio(audio_bytes)
-                
-                # Transcribe the audio
-                transcription = stt.transcribe_audio(processed_audio)
-                
-                # Update the case description
-                st.session_state.case_voice_input = transcription
-                st.session_state.case_audio_processed = True
-                
-                # Rerun to update the text area with the transcription
-                st.rerun()
-        
-        # Clear the processed flag if there's no audio file
-        if audio_file is None and "case_audio_processed" in st.session_state:
-            st.session_state.pop("case_audio_processed")
     
     # Process analysis
     if st.button(analyze_button_text):
