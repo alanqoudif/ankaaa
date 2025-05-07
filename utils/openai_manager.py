@@ -305,3 +305,52 @@ class OpenAIManager:
             """
         
         return self._generate_response(prompt, language)
+    
+    def improve_legal_text_readability(self, text, language="English"):
+        """
+        Improves the readability of legal text that might be garbled or poorly formatted.
+        
+        Args:
+            text: The original legal text to clean up and improve
+            language: The language of the text ("English" or "Arabic")
+            
+        Returns:
+            Improved, better formatted text
+        """
+        try:
+            # Detect if the text contains Arabic
+            has_arabic = any(ord(c) in range(0x0600, 0x06FF) for c in text)
+            
+            # Create language-appropriate system messages
+            if has_arabic or language == "Arabic":
+                system_message = """
+                أنت خبير في تنسيق النصوص القانونية وتحسين قراءتها. مهمتك هي تحسين النص القانوني التالي بدون تغيير المعنى أو المحتوى.
+                قم فقط بإصلاح مشاكل التنسيق، وترتيب الأقواس والرموز بشكل صحيح، وتنظيم الفقرات بشكل منطقي.
+                لا تقم بإضافة أو حذف أي معلومات قانونية.
+                احتفظ بجميع الأرقام والرموز والإشارات المرجعية.
+                احتفظ بنفس اللغة الأصلية (العربية).
+                """
+                user_prompt = f"الرجاء تحسين قراءة وتنسيق النص القانوني التالي مع الحفاظ على المعنى الأصلي والمصطلحات القانونية:\n\n{text}"
+            else:
+                system_message = """
+                You are an expert in formatting legal texts to improve readability. Your task is to clean up the following legal text without changing its meaning or content.
+                Only fix formatting issues, properly arrange brackets and symbols, and organize paragraphs logically.
+                Do not add or remove any legal information.
+                Keep all numbers, symbols, and references intact.
+                Keep the same original language (English or Arabic).
+                """
+                user_prompt = f"Please improve the readability and formatting of the following legal text while preserving the original meaning and legal terminology:\n\n{text}"
+            
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.3  # Lower temperature for more consistent output
+            )
+            return response.choices[0].message.content
+        except Exception as e:
+            # If there's an error, return the original text
+            print(f"Error improving text readability: {str(e)}")
+            return text

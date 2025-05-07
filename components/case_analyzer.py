@@ -158,13 +158,39 @@ def case_analyzer(vector_store, language):
                     st.markdown("---")
                     st.markdown("##### Content:")
                     
-                    # Format the content with proper styling
-                    content_html = f"""
+                    # Improve the readability of the text using OpenAI
+                    original_content = doc.page_content
+                    
+                    # Show loading spinner while improving text
+                    with st.spinner("Improving text readability..." if language == "English" else "تحسين قراءة النص..."):
+                        improved_content = llm_manager.improve_legal_text_readability(original_content, language)
+                    
+                    # Format the original content with proper styling
+                    original_html = f"""
+                    <details>
+                        <summary style="cursor: pointer; color: #555; font-weight: bold; margin-bottom: 5px;">
+                            {"Show Original Text" if language == "English" else "عرض النص الأصلي"}
+                        </summary>
+                        <div dir="auto" style="background-color: #f0f0f0; padding: 10px; 
+                                              border-radius: 5px; margin: 10px 0; 
+                                              font-family: 'Arial', sans-serif; line-height: 1.5;">
+                            {original_content}
+                        </div>
+                    </details>
+                    """
+                    
+                    # Format the improved content with proper styling
+                    improved_html = f"""
                     <div dir="auto" style="background-color: #f0f0f0; padding: 10px; 
                                           border-radius: 5px; margin: 10px 0; 
-                                          font-family: 'Arial', sans-serif; line-height: 1.5;">
-                        {doc.page_content}
+                                          font-family: 'Arial', sans-serif; line-height: 1.5;
+                                          border-left: 4px solid #2c3e50;">
+                        {improved_content}
                     </div>
                     """
-                    st.markdown(content_html, unsafe_allow_html=True)
+                    
+                    # Show the improved text by default with option to view original
+                    st.markdown(f"<h6>{'Improved Text:' if language == 'English' else 'النص المحسن:'}</h6>", unsafe_allow_html=True)
+                    st.markdown(improved_html, unsafe_allow_html=True)
+                    st.markdown(original_html, unsafe_allow_html=True)
                     st.markdown("---")
