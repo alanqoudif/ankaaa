@@ -52,84 +52,45 @@ def case_analyzer(vector_store, language):
     # Case description input
     case_description = st.text_area(case_input_label, value=st.session_state.case_voice_input, placeholder=case_placeholder, height=200)
     
-    # Add direct speech-to-text functionality
+    # Add direct voice-to-text functionality using Streamlit's audio recorder
     if language == "English":
-        speech_button_text = "🎤 Click to Speak"
-        speech_active_text = "🔴 Listening... Click to Stop"
-        speech_placeholder = "Listening to your case description..."
+        record_button_text = "🎤 Record Voice Case Description"
+        recording_text = "Recording... Click to stop"
+        processing_text = "Processing audio..."
     else:  # Arabic
-        speech_button_text = "🎤 انقر للتحدث"
-        speech_active_text = "🔴 جاري الاستماع... انقر للإيقاف"
-        speech_placeholder = "جاري الاستماع إلى وصف القضية..."
+        record_button_text = "🎤 تسجيل وصف القضية صوتياً"
+        recording_text = "جارٍ التسجيل... انقر للإيقاف"
+        processing_text = "جارٍ معالجة الصوت..."
     
-    # Initialize session state for speech recording status
-    if "case_speech_active" not in st.session_state:
-        st.session_state.case_speech_active = False
+    # Audio recorder with custom styling
+    st.write(f"**{record_button_text}**")
     
-    # Create a button for speech input
-    speech_col1, speech_col2 = st.columns([1, 3])
+    # Create the audio recorder with a styled button
+    audio_bytes = st.audio_recorder(
+        pause_threshold=3.0,  # Auto-stop after 3s of silence
+        sample_rate=16000,    # 16kHz sample rate
+        key="case_audio_recorder"
+    )
     
-    with speech_col1:
-        button_text = speech_active_text if st.session_state.case_speech_active else speech_button_text
-        button_type = "primary" if st.session_state.case_speech_active else "secondary"
-        
-        if st.button(button_text, key="case_speech_button", type=button_type):
-            # Toggle speech recording state
-            st.session_state.case_speech_active = not st.session_state.case_speech_active
+    # Process recorded audio
+    if audio_bytes is not None and "case_recording_processed" not in st.session_state:
+        with st.spinner(processing_text):
+            # Process the audio
+            processed_audio = preprocess_audio(audio_bytes)
+            
+            # Transcribe the audio
+            transcription = stt.transcribe_audio(processed_audio)
+            
+            # Update the case description
+            st.session_state.case_voice_input = transcription
+            st.session_state.case_recording_processed = True
+            
+            # Rerun to update the text area with the transcription
             st.rerun()
     
-    # Add JavaScript for speech recognition
-    if st.session_state.case_speech_active:
-        with speech_col2:
-            st.write(speech_placeholder)
-            
-        # Determine the language code for speech recognition
-        speech_lang = "en-US" if language == "English" else "ar-EG"
-        
-        # Create JavaScript for speech recognition
-        js_code = f"""
-        <script>
-        const speechDiv = window.parent.document.querySelector('[data-testid="stMarkdown"] p');
-        const textArea = window.parent.document.querySelector('textarea');
-        const button = window.parent.document.querySelector('[data-testid="baseButton-secondary"]');
-        
-        if (typeof window.speechRecognition === 'undefined') {{
-            window.speechRecognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            window.speechRecognition.continuous = true;
-            window.speechRecognition.interimResults = true;
-            window.speechRecognition.lang = '{speech_lang}';
-            
-            window.speechRecognition.onresult = (event) => {{
-                let finalTranscript = '';
-                for (let i = event.resultIndex; i < event.results.length; ++i) {{
-                    if (event.results[i].isFinal) {{
-                        finalTranscript += event.results[i][0].transcript;
-                    }}
-                }}
-                
-                if (finalTranscript !== '') {{
-                    textArea.value = finalTranscript;
-                    // Trigger input event to update Streamlit state
-                    const event = new Event('input', {{ bubbles: true }});
-                    textArea.dispatchEvent(event);
-                }}
-            }};
-            
-            window.speechRecognition.onerror = (event) => {{
-                console.error('Speech recognition error', event.error);
-                button.click(); // Stop recording on error
-            }};
-        }}
-        
-        // Start recognition
-        try {{
-            window.speechRecognition.start();
-        }} catch (e) {{
-            console.error('Could not start speech recognition', e);
-        }}
-        </script>
-        """
-        st.components.v1.html(js_code, height=0)
+    # Clear the processed flag when starting a new recording
+    if audio_bytes is None and "case_recording_processed" in st.session_state:
+        st.session_state.pop("case_recording_processed")
     
     # Voice input through file upload as fallback option
     st.write(upload_text)
