@@ -42,7 +42,7 @@ def extract_text_from_pdf(pdf_path):
             if any(ord(c) in range(0x0600, 0x06FF) for c in page_text):
                 has_arabic = True
             
-            text += f"\nPage {page_num + 1}:\n{page_text}"
+            text += f"\n===== Page {page_num + 1} =====\n{page_text}"
             
             # Try to extract the actual law name from the first page
             if page_num == 0:
@@ -142,6 +142,12 @@ def process_pdfs(pdf_paths):
             
             # Create LangChain documents with metadata
             for i, chunk in enumerate(chunks):
+                # Extract page number from the chunk if possible
+                page_num = "Unknown"
+                page_match = re.search(r'===== Page (\d+) =====', chunk)
+                if page_match:
+                    page_num = page_match.group(1)
+                
                 doc = Document(
                     page_content=chunk,
                     metadata={
@@ -149,7 +155,8 @@ def process_pdfs(pdf_paths):
                         "law_name": extracted_data["metadata"]["law_name"],
                         "has_arabic": has_arabic,
                         "chunk": i,
-                        "total_chunks": len(chunks)
+                        "total_chunks": len(chunks),
+                        "page": page_num
                     }
                 )
                 documents.append(doc)

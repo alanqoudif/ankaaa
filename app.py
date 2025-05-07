@@ -201,4 +201,4 @@ st.markdown("---")
 if st.session_state.language == "English":
     st.markdown("Omani Legal AI Assistant © 2023 | Powered by OpenAI and LangChain")
 else:  # Arabic
-    st.markdown("مساعد الذكاء الاصطناعي القانوني العماني © 2023 | مدعوم من OpenAI و LangChain")
+    st.markdown("مساعد الذكاء الاصطناعي القانوني العماني © 2023 | مدعوم من N و LangChain")

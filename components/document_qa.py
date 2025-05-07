@@ -103,8 +103,30 @@ def document_qa(vector_store, language):
                 for i, (doc, score) in enumerate(search_results):
                     law_name = doc.metadata.get("law_name", "Unknown Law")
                     source = doc.metadata.get("source", "Unknown Source")
+                    page_num = doc.metadata.get("page", "Unknown")
                     
-                    st.markdown(f"**Source {i+1}: {law_name}**")
-                    st.markdown(f"*File: {source} | Relevance: {score:.2f}*")
-                    st.markdown(doc.page_content)
+                    # Create styled header for source
+                    if language == "English":
+                        header = f"**Source {i+1}: {law_name}**"
+                        file_info = f"*File: {source} | Page: {page_num} | Relevance: {score:.2f}*"
+                    else:
+                        header = f"**المصدر {i+1}: {law_name}**"
+                        file_info = f"*الملف: {source} | الصفحة: {page_num} | الصلة: {score:.2f}*"
+                    
+                    st.markdown(header)
+                    st.markdown(file_info)
+                    
+                    # Display content in a more readable format
+                    st.markdown("---")
+                    st.markdown("##### Content:")
+                    
+                    # Format the content with proper styling
+                    content_html = f"""
+                    <div dir="auto" style="background-color: #f0f0f0; padding: 10px; 
+                                          border-radius: 5px; margin: 10px 0; 
+                                          font-family: 'Arial', sans-serif; line-height: 1.5;">
+                        {doc.page_content}
+                    </div>
+                    """
+                    st.markdown(content_html, unsafe_allow_html=True)
                     st.markdown("---")

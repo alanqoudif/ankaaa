@@ -78,6 +78,16 @@ def law_comparison(vector_store, available_laws, language):
                 language
             )
             
-            # Display comparison
+            # Display comparison with improved formatting
             st.write("### Comparison Results")
-            st.write(comparison)
+            
+            # Format the comparison with proper styling for bidirectional text
+            comparison_html = f"""
+            <div dir="auto" style="background-color: #f9f9f9; padding: 15px; 
+                                  border-radius: 5px; margin: 10px 0; 
+                                  font-family: 'Arial', sans-serif; line-height: 1.6;
+                                  border-left: 4px solid #2c3e50;">
+                {comparison}
+            </div>
+            """
+            st.markdown(comparison_html, unsafe_allow_html=True)
