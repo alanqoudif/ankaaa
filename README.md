@@ -38,7 +38,7 @@ A bilingual Legal AI Assistant specialized in Omani legal documentation, offerin
 
 1. Clone the repository:
    ```
-   git clone <repository-url>
+   git clone https://github.com/alanqoudif/Omani-Legal-AI-Assistant.git
    cd omani-legal-ai-assistant
    ```
 

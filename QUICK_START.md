@@ -16,11 +16,11 @@ Get the Omani Legal AI Assistant up and running in just a few minutes.
 
 ```bash
 # Clone repository
-git clone <repository-url>
+git clone https://github.com/alanqoudif/Omani-Legal-AI-Assistant.git
 cd omani-legal-ai-assistant
 
 # Install dependencies 
-pip install streamlit openai langchain langchain-community numpy faiss-cpu pymupdf reportlab pydub trafilatura arabic-reshaper python-bidi tensorflow tensorflow-hub sentence-transformers
+pip install -r requirements.txt
 
 # Set API key
 # On Linux/Mac:
